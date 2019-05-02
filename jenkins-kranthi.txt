@@ -1,0 +1,77 @@
+pipeline {
+    
+    agent { node { label 'slave-1' } }
+	
+	parameters {
+        string(name: 'templatefile', defaultValue: 'Deault parameter value', description: 'Who should I say hello to?')
+
+    }
+	
+	triggers {
+	
+	genericTrigger {
+		genericVariables {
+		genericVariable {
+		key("changed_files")
+		value("\$.something")
+		expressionType("JSONPath") //Optional, defaults to JSONPath
+		regexpFilter("") //Optional, defaults to empty string
+		defaultValue("") //Optional, defaults to empty string
+		}
+   }
+   genericRequestVariables {
+		genericRequestVariable {
+		key("requestParameterName")
+		regexpFilter("")
+		}
+   }
+   genericHeaderVariables {
+		genericHeaderVariable {
+		key("requestHeaderName")
+		regexpFilter("")
+		}
+   }
+	token('abc123')
+	printContributedVariables(true)
+	printPostContent(true)
+	silentResponse(false)
+	regexpFilterText("\$VARIABLE_FROM_POST")
+	regexpFilterExpression("aRegExp")
+  }
+ }
+
+    
+    
+    stages {
+        stage('Git checkout'){
+            steps {
+                echo 'Git checkout ' ;
+                checkout([$class: 'GitSCM',
+				branches: [[name: '*/master']],
+				doGenerateSubmoduleConfigurations: false,
+				extensions: [[$class: 'PathRestriction', excludedRegions: '', includedRegions: 'test']],
+				submoduleCfg: [],
+				userRemoteConfigs: [[url: 'https://github.com/ram1810/java-sample.git']]])
+            } 
+        }
+		
+		stage('Build project'){
+			  bat "powershell.exe command"
+		}
+		stage('POST BUILD ACTION NOTIFICATION'){
+			
+			def mailRecipients = "your_recipients@company.com"
+			def jobName = currentBuild.fullDisplayName
+
+		emailext body: '''${SCRIPT, template="groovy-html.template"}''',
+			mimeType: 'text/html',
+			subject: "[Jenkins] ${jobName}",
+			to: "${mailRecipients}",
+			replyTo: "${mailRecipients}",
+			recipientProviders: [[$class: 'CulpritsRecipientProvider']]
+				
+		}
+    }
+	
+	
+}
